@@ -10,17 +10,6 @@ def on_new_client(clientsocket, addr,player_num):
 	print ('Got connection from', addr)
 	player_num = str(player_num)
 	clientsocket.send(player_num.encode('utf-8'))
-	# while True:
-	# 	msg = clientsocket.recv(1024)
-	# 	if msg == 'exit':
-	# 		break
-	# 	# print(addr, ' >> ', msg.decode('utf-8'))
-	# 	# msg = input('SERVER >> ')
-	# 	# clientsocket.send(msg.encode('utf-8'))
-	# 	data_string = pickle.dumps(stdscr)
-	# 	clientsocket.send(data_string)
-	# 	msg = input('SERVER >> ')
-	# clientsocket.close()
 
 def main():
 	# parser = argparse.ArgumentParser(description='Starts the server. ')
@@ -29,7 +18,7 @@ def main():
 	# parser.add_argument('players', type=int, nargs=1, default=2)
 	# args = parser.parse_args()
 
-	host = '192.168.10.2'
+	host = '192.168.10.6'
 	port = 9999                 								# Reserve a port for your service.
 	max_players = 2
 	current_players = 0
@@ -39,7 +28,6 @@ def main():
 	s = socket.socket()         								# Create a socket object
 	s.bind((host, port))        								# Bind to the port
 	s.listen()                 									# Now wait for client connection.
-	# s.setblocking(0)
 	print('Server started!')
 	print('Waiting for clients...')
 
@@ -70,27 +58,28 @@ def main():
 		data_string = pickle.dumps(positions)
 		p.send(data_string)
 
+	s.setblocking(0)
 	while True:
 		data = None
 		for p in players:
+			# p.setblocking(0)
 			print('stuck')
 			data = p.recv(1024)
 			if data != None:
 				break
-		print(data)
 		temp_list = pickle.loads(data)
 		pos = temp_list[0]
 		key = temp_list[1]
 		temp_x = positions[pos][0]
 		temp_y = positions[pos][1]
 		if key == curses.KEY_RIGHT:
-			temp_y = temp_y + 1
-		elif key == curses.KEY_UP:
-			temp_x = temp_x - 1
-		elif key == curses.KEY_LEFT:
-			temp_y = temp_y - 1
-		else:
 			temp_x = temp_x + 1
+		elif key == curses.KEY_UP:
+			temp_y = temp_y - 1
+		elif key == curses.KEY_LEFT:
+			temp_x = temp_x - 1
+		else:
+			temp_y = temp_y + 1
 		positions[pos] = (temp_x, temp_y)
 		data_string = pickle.dumps(positions[pos])
 		players[pos].send(data_string)
