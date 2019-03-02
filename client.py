@@ -27,10 +27,11 @@ def main():
 	# parser.add_argument('port', type=int, nargs=1, default=9999)
 	# args = parser.parse_args()
 
-	host = '192.168.10.6'
+	host = socket.gethostbyname(socket.gethostname())
 	port = 9999
 	window = None
 	player_num = -1
+
 	positions = []
 
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -42,6 +43,7 @@ def main():
 	data = data.decode('utf-8')
 	player_num = int(data)
 
+	print ("player number: " + str(player_num))
 	data = s.recv(1024)
 	data = data.decode('utf-8')
 	if data == 'create_board':
@@ -51,6 +53,7 @@ def main():
 	key = window.getch()
 	window.nodelay(True)
 
+	#s.setblocking(0)
 	while True:
 		next_key = window.getch()
 		key = key if next_key == -1 else next_key
@@ -59,8 +62,10 @@ def main():
 				temp_list.append(player_num)
 				temp_list.append(next_key)
 				data_string = pickle.dumps(temp_list)
+				print ("input sent")
 				s.send(data_string)
 
+				print ("input received")
 				data = s.recv(1024)
 				new_pos = pickle.loads(data)
 				print(new_pos[1], new_pos[0])

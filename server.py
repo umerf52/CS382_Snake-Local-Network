@@ -18,7 +18,7 @@ def main():
 	# parser.add_argument('players', type=int, nargs=1, default=2)
 	# args = parser.parse_args()
 
-	host = '192.168.10.6'
+	host = socket.gethostbyname(socket.gethostname())
 	port = 9999                 								# Reserve a port for your service.
 	max_players = 2
 	current_players = 0
@@ -62,13 +62,14 @@ def main():
 	while True:
 		data = None
 		for p in players:
-			# p.setblocking(0)
 			print('stuck')
 			data = p.recv(1024)
+			print('recv')
 			if data != None:
 				break
 		temp_list = pickle.loads(data)
 		pos = temp_list[0]
+		print ("pos :" + str(pos))
 		key = temp_list[1]
 		temp_x = positions[pos][0]
 		temp_y = positions[pos][1]
@@ -81,6 +82,7 @@ def main():
 		else:
 			temp_y = temp_y + 1
 		positions[pos] = (temp_x, temp_y)
+
 		data_string = pickle.dumps(positions[pos])
 		players[pos].send(data_string)
 
