@@ -5,10 +5,12 @@ import pickle
 
 def create_board(s, player_num):
 	data = s.recv(1024)
+	winsize = pickle.loads(data)
+	sh, sw = winsize[0], winsize[1]
+	data = s.recv(1024)
 	positions = pickle.loads(data)
 	stdscr = curses.initscr()
 	curses.curs_set(0)
-	sh, sw = stdscr.getmaxyx()
 	window = curses.newwin(sh, sw, 0, 0)
 	window.keypad(1)
 	window.timeout(-1)
@@ -21,23 +23,36 @@ def create_board(s, player_num):
 		next_key = window.getch()
 	return window, positions
 
+
+def create_socket():
+	host = socket.gethostbyname(socket.gethostname())
+	port = 9999
+
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((host, port))
+	##s.listen()
+	print('Connected to ', host, port)
+	return s
+
+
 def main():
 	# parser = argparse.ArgumentParser(description='Starts the client. ')
 	# parser.add_argument('ip_adress', nargs=1, default='192.168.10.4')
 	# parser.add_argument('port', type=int, nargs=1, default=9999)
 	# args = parser.parse_args()
 
-	host = socket.gethostbyname(socket.gethostname())
-	port = 9999
+	#host = socket.gethostbyname(socket.gethostname())
+	#port = 9999
 	window = None
 	player_num = -1
 
 	positions = []
 
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect((host, port))
+	#s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	#s.connect((host, port))
 	# s.setblocking(0)
-	print('Connected to ', host, port)
+	#print('Connected to ', host, port)
+	s = create_socket()
 
 	data = s.recv(1024)
 	data = data.decode('utf-8')
