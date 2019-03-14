@@ -43,9 +43,7 @@ def joining_players(current_players, max_players, mainsocket):
 
 def listen_client_moves(player_num, s):
 	while True:
-		# data = None
 		data = s.recv(1024)
-		# print(data)
 		key = int(data.decode('utf-8'))
 		print('player_num ', player_num, key)
 
@@ -94,12 +92,27 @@ def main():
 	for p in players:
 		msg = 'create_board'
 		p.send(msg.encode('utf-8'))
+		data = p.recv(1024)
+		msg = data.decode('utf-8')
+		if msg == 'started making board':
+			print(msg)
+			continue
+		else:
+			print('Error issuing create_board')
 
 
 	for p in players:			# send window size to be created for board 
 		windowsize_string = pickle.dumps(windowsize)
 		p.send(windowsize_string)
+		data = p.recv(1024)
+		msg = data.decode('utf-8')
+		if msg == 'size received':
+			print(msg)
+			continue
+		else:
+			print('Error sending size')
 
+	print('sub set hai')
 
 	for p in players:
 		temp_x = random.randint(0, max_x-1)
@@ -110,12 +123,6 @@ def main():
 	for p in players:
 		data_string = pickle.dumps(positions)
 		p.send(data_string)
-		# ack = p.recv(1024)
-		# ack = ack.decode('utf-8')
-		# if ack == 'board made':
-		# 	continue
-		# else:
-		# 	print('Error while creating board for', p)
 
 	listener_threads = []
 	print('fast')
