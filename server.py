@@ -83,6 +83,8 @@ def main():
 	max_y, max_x = stdscr.getmaxyx()
 	curses.endwin()
 	windowsize = []
+	max_y = max_y-2
+	max_x = max_x-2
 	windowsize.extend((max_y, max_x))
 	
 	current_players, players = joining_players(current_players, max_players, s)

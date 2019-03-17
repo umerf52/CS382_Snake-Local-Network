@@ -14,7 +14,7 @@ def create_board(s, player_num):
 	sh, sw = winsize[0], winsize[1]
 	stdscr = curses.initscr()
 	curses.curs_set(0)
-	window = curses.newwin(sh-2, sw-2, 0, 0)
+	window = curses.newwin(sh, sw, 0, 0)
 	window.keypad(1)
 	window.timeout(1)
 	data = s.recv(1024)
