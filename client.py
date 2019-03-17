@@ -2,6 +2,7 @@ import socket
 import argparse
 import curses
 import pickle
+import random
 
 # Global variables
 positions = []
@@ -9,24 +10,22 @@ positions = []
 def create_board(s, player_num):
 	data = s.recv(1024)
 	winsize = pickle.loads(data)
+	s.send('size received'.encode('utf-8'))
 	sh, sw = winsize[0], winsize[1]
 	stdscr = curses.initscr()
 	curses.curs_set(0)
 	window = curses.newwin(sh, sw, 0, 0)
 	window.keypad(1)
-	window.timeout(-1)
+	window.timeout(1)
 	data = s.recv(1024)
 	global positions
 	positions = pickle.loads(data)
 	for i in range(len(positions)):
 		if i == player_num:
 			window.addch(positions[i][1], positions[i][0], curses.ACS_CKBOARD)
-			print(positions[i][1], positions[i][0])
 		else:
 			window.addch(positions[i][1], positions[i][0], '*')
 		next_key = window.getch()
-	# msg = 'board made'
-	# s.send(msg.encode('utf-8'))
 	return window, positions
 
 
@@ -40,15 +39,13 @@ def create_socket():
 	return s
 
 def update_board(new_positions, player_num, window):
+	window.clear()
 	global positions
-	old_positions = positions
 	for i in range(len(positions)):
 		if i == player_num:
 			window.addch(new_positions[i][1], new_positions[i][0], curses.ACS_CKBOARD)
-			window.addch(old_positions[i][1], old_positions[i][0], ' ')
 		else:
 			window.addch(new_positions[i][1], new_positions[i][0], '*')
-			window.addch(old_positions[i][1], old_positions[i][0], ' ')
 	positions = new_positions
 
 
@@ -69,20 +66,34 @@ def main():
 	data = s.recv(1024)
 	data = data.decode('utf-8')
 	if data == 'create_board':
+		s.send('started making board'.encode('utf-8'))
 		global positions
 		window, positions = create_board(s, player_num)
+
 
 	key = window.getch()
 
 	#s.setblocking(0)
+
+	key_list = [curses.KEY_UP, curses.KEY_DOWN, curses.KEY_LEFT, curses.KEY_RIGHT]
+	key = random.choice(key_list)
+	window.nodelay(1)
+
 	while True:
 		next_key = window.getch()
 		key = key if next_key == -1 else next_key
-		if (next_key == curses.KEY_RIGHT) or (next_key == curses.KEY_LEFT) or (next_key == curses.KEY_UP) or (next_key == curses.KEY_DOWN):
-				s.send(str(next_key).encode('utf-8'))
-				data = s.recv(1024)
-				new_positions = pickle.loads(data)
-				update_board(new_positions, player_num, window)
+		if next_key in key_list:
+			s.send(str(next_key).encode('utf-8'))
+			data = s.recv(1024)
+			new_positions = pickle.loads(data)
+			if new_positions == 'Collision detected. ':
+				print(new_positions, '\nGAME OVER.')
+				curses.endwin()
+				break
+			update_board(new_positions, player_num, window)
+			key = next_key
+		else:
+			update_board(positions, player_num, window)
 
 	s.close()
 

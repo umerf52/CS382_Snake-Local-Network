@@ -41,13 +41,10 @@ def joining_players(current_players, max_players, mainsocket):
 	return current_players, players_threads
 
 
-def listen_client_moves(player_num, s):
+def listen_client_moves(player_num, s, players):
 	while True:
-		# data = None
 		data = s.recv(1024)
-		# print(data)
 		key = int(data.decode('utf-8'))
-		print('player_num ', player_num, key)
 
 		global positions
 		temp_x = positions[player_num][0]
@@ -60,11 +57,20 @@ def listen_client_moves(player_num, s):
 			temp_x = temp_x - 1
 		else:
 			temp_y = temp_y + 1
+
+		for i in range(len(positions)):
+			if i == player_num:
+				continue
+			else:
+				if (temp_x == positions[i][0]) and (temp_y == positions[i][1]):
+					s.send(pickle.dumps('Collision detected. '))
+					players[i].send(pickle.dumps('Collision detected. '))
+					s.close()
+					players[i].close()
 		positions[player_num] = (temp_x, temp_y)
 
 		data_string = pickle.dumps(positions)
 		s.send(data_string)
-		print(positions)
 
 
 def main():
@@ -85,6 +91,8 @@ def main():
 	max_y, max_x = stdscr.getmaxyx()
 	curses.endwin()
 	windowsize = []
+	max_y = max_y-2
+	max_x = max_x-2
 	windowsize.extend((max_y, max_x))
 	
 	current_players, players = joining_players(current_players, max_players, s)
@@ -94,11 +102,25 @@ def main():
 	for p in players:
 		msg = 'create_board'
 		p.send(msg.encode('utf-8'))
+		data = p.recv(1024)
+		msg = data.decode('utf-8')
+		if msg == 'started making board':
+			print(msg)
+			continue
+		else:
+			print('Error issuing create_board')
 
 
 	for p in players:			# send window size to be created for board 
 		windowsize_string = pickle.dumps(windowsize)
 		p.send(windowsize_string)
+		data = p.recv(1024)
+		msg = data.decode('utf-8')
+		if msg == 'size received':
+			print(msg)
+			continue
+		else:
+			print('Error sending size')
 
 
 	for p in players:
@@ -110,18 +132,11 @@ def main():
 	for p in players:
 		data_string = pickle.dumps(positions)
 		p.send(data_string)
-		# ack = p.recv(1024)
-		# ack = ack.decode('utf-8')
-		# if ack == 'board made':
-		# 	continue
-		# else:
-		# 	print('Error while creating board for', p)
 
 	#s.setblocking(0)
 	listener_threads = []
-	print('fast')
 	for i in range(len(players)):
-		thread = threading.Thread(target=listen_client_moves, args=(i, players[i]))
+		thread = threading.Thread(target=listen_client_moves, args=(i, players[i], players))
 		thread.daemon = True
 		thread.start()
 		listener_threads.append(thread)
