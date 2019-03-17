@@ -117,6 +117,7 @@ def main():
 		# else:
 		# 	print('Error while creating board for', p)
 
+	#s.setblocking(0)
 	listener_threads = []
 	print('fast')
 	for i in range(len(players)):

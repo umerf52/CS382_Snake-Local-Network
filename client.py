@@ -74,6 +74,7 @@ def main():
 
 	key = window.getch()
 
+	#s.setblocking(0)
 	while True:
 		next_key = window.getch()
 		key = key if next_key == -1 else next_key
