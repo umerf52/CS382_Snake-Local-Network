@@ -23,7 +23,6 @@ def create_board(s, player_num):
 	for i in range(len(positions)):
 		if i == player_num:
 			window.addch(positions[i][1], positions[i][0], curses.ACS_CKBOARD)
-			print(positions[i][1], positions[i][0])
 		else:
 			window.addch(positions[i][1], positions[i][0], '*')
 		next_key = window.getch()
@@ -74,7 +73,6 @@ def main():
 	key_list = [curses.KEY_UP, curses.KEY_DOWN, curses.KEY_LEFT, curses.KEY_RIGHT]
 	key = random.choice(key_list)
 	window.nodelay(1)
-	print(key)
 	while True:
 		next_key = window.getch()
 		key = key if next_key == -1 else next_key
@@ -82,6 +80,10 @@ def main():
 			s.send(str(next_key).encode('utf-8'))
 			data = s.recv(1024)
 			new_positions = pickle.loads(data)
+			if new_positions == 'Collision detected. ':
+				print(new_positions, '\nGAME OVER.')
+				curses.endwin()
+				break
 			update_board(new_positions, player_num, window)
 			key = next_key
 		else:

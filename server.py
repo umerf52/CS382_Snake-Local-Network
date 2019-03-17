@@ -41,11 +41,10 @@ def joining_players(current_players, max_players, mainsocket):
 	return current_players, players_threads
 
 
-def listen_client_moves(player_num, s):
+def listen_client_moves(player_num, s, players):
 	while True:
 		data = s.recv(1024)
 		key = int(data.decode('utf-8'))
-		print('player_num ', player_num, key)
 
 		global positions
 		temp_x = positions[player_num][0]
@@ -58,11 +57,20 @@ def listen_client_moves(player_num, s):
 			temp_x = temp_x - 1
 		else:
 			temp_y = temp_y + 1
+
+		for i in range(len(positions)):
+			if i == player_num:
+				continue
+			else:
+				if (temp_x == positions[i][0]) and (temp_y == positions[i][1]):
+					s.send(pickle.dumps('Collision detected. '))
+					players[i].send(pickle.dumps('Collision detected. '))
+					s.close()
+					players[i].close()
 		positions[player_num] = (temp_x, temp_y)
 
 		data_string = pickle.dumps(positions)
 		s.send(data_string)
-		print(positions)
 
 
 def main():
@@ -114,7 +122,6 @@ def main():
 		else:
 			print('Error sending size')
 
-	print('sub set hai')
 
 	for p in players:
 		temp_x = random.randint(0, max_x-1)
@@ -127,9 +134,8 @@ def main():
 		p.send(data_string)
 
 	listener_threads = []
-	print('fast')
 	for i in range(len(players)):
-		thread = threading.Thread(target=listen_client_moves, args=(i, players[i]))
+		thread = threading.Thread(target=listen_client_moves, args=(i, players[i], players))
 		thread.daemon = True
 		thread.start()
 		listener_threads.append(thread)
