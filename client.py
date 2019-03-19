@@ -35,17 +35,20 @@ def create_socket():
 
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((host, port))
-	print('Connected to ', host, port)
+	print('Connected to ', host, port, '\n')
 	return s
 
 def update_board(new_positions, player_num, window):
 	window.clear()
-	global positions
-	for i in range(len(positions)):
+	for i in range(len(new_positions)):
 		if i == player_num:
 			window.addch(new_positions[i][1], new_positions[i][0], curses.ACS_CKBOARD)
 		else:
-			window.addch(new_positions[i][1], new_positions[i][0], '*')
+			if (new_positions[i][1] != -1) and (new_positions[i][0] != -1):
+				window.addch(new_positions[i][1], new_positions[i][0], '*')
+
+
+	global positions
 	positions = new_positions
 
 
@@ -55,8 +58,10 @@ def main():
 	# parser.add_argument('port', type=int, nargs=1, default=9999)
 	# args = parser.parse_args()
 
-	window = None
 	player_num = -1
+	window = None
+	key_list = [curses.KEY_UP, curses.KEY_DOWN, curses.KEY_LEFT, curses.KEY_RIGHT]
+
 	s = create_socket()
 
 	data = s.recv(1024)
@@ -70,22 +75,28 @@ def main():
 		global positions
 		window, positions = create_board(s, player_num)
 
-	key_list = [curses.KEY_UP, curses.KEY_DOWN, curses.KEY_LEFT, curses.KEY_RIGHT]
 	key = random.choice(key_list)
-	window.nodelay(1)
 	while True:
 		next_key = window.getch()
-		key = key if next_key == -1 else next_key
-		if next_key in key_list:
-			s.send(str(next_key).encode('utf-8'))
+		if next_key == -1:
+			key = key
+		else:
+			key = next_key
+		if key in key_list:
+			s.send(str(key).encode('utf-8'))
 			data = s.recv(1024)
-			new_positions = pickle.loads(data)
-			if new_positions == 'Collision detected. ':
-				print(new_positions, '\nGAME OVER.')
+			response = pickle.loads(data)
+			if response == 'Collision detected.':
+				print(response, '\nGAME OVER.')
 				curses.endwin()
 				break
-			update_board(new_positions, player_num, window)
-			key = next_key
+
+			if response == 'Out of bounds. ':
+				print(response, '\nGAME OVER.')
+				curses.endwin()
+				break
+
+			update_board(response, player_num, window)
 		else:
 			update_board(positions, player_num, window)
 
