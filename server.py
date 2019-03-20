@@ -16,14 +16,11 @@ def on_new_client(clientsocket, addr,player_num):
 	clientsocket.send(player_num.encode('utf-8'))				# send player number assigned to client
 
 
-def create_socket():
-	host = socket.gethostbyname(socket.gethostname())
-	port = 9999
-
+def create_socket(ip_adress, port):
 	s = socket.socket()
-	s.bind((host, port))
+	s.bind((ip_adress, port))
 	s.listen()
-	print('Server started!')
+	print('Server started...')
 	return s
 
 
@@ -37,7 +34,9 @@ def joining_players(current_players, max_players, mainsocket):
 		thread.start()
 		players_threads.append(c)
 		current_players = current_players + 1
-	print ("\nAll players connected\n")
+	print ("\nAll players connected\nStarting game in 3 seconds.\n")
+	time.sleep(3)
+
 	return current_players, players_threads
 
 
@@ -106,17 +105,17 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 
 
 def main():
-	# parser = argparse.ArgumentParser(description='Starts the server. ')
-	# parser.add_argument('ip_adress', nargs=1, default='192.168.10.4')
-	# parser.add_argument('port', type=int, nargs=1, default=9999)
-	# parser.add_argument('players', type=int, nargs=1, default=2)
-	# args = parser.parse_args()
+	parser = argparse.ArgumentParser(description='Starts the server. ')
+	parser.add_argument('ip_adress', nargs=1, default='192.168.10.4')
+	parser.add_argument('port', type=int, nargs=1, default=9999)
+	parser.add_argument('players', type=int, nargs=1, default=2)
+	args = parser.parse_args()
 
-	max_players = 2
+	max_players = args.players[0]
 	current_players = 0
 	players = []
 
-	s = create_socket()
+	s = create_socket(args.ip_adress[0], args.port[0])
 	print('Waiting for clients... \n')
 
 	stdscr = curses.initscr()
@@ -134,19 +133,16 @@ def main():
 		data = p.recv(1024)
 		msg = data.decode('utf-8')
 		if msg == 'started making board':
-			# print(msg)
 			continue
 		else:
 			print('Error issuing create_board')
 
 
 	for p in players:			# send window size to be created for board 
-		# window_size_string = pickle.dumps(window_size)
 		p.send(pickle.dumps(window_size))
 		data = p.recv(1024)
 		msg = data.decode('utf-8')
 		if msg == 'size received':
-			# print(msg)
 			continue
 		else:
 			print('Error sending size')

@@ -35,13 +35,10 @@ def create_board(s, player_num):
 	return window, positions
 
 
-def create_socket():
-	host = socket.gethostbyname(socket.gethostname())
-	port = 9999
-
+def create_socket(ip_adress, port):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect((host, port))
-	print('Connected to ', host, port, '\n')
+	s.connect((ip_adress, port))
+	print('Connected to ', ip_adress, port, '\nWaiting for other players.\n')
 	return s
 
 def update_board(new_positions, player_num, window):
@@ -57,22 +54,21 @@ def update_board(new_positions, player_num, window):
 				#window.addch(new_positions[i][1], new_positions[i][0]-1, '*')
 				#window.addch(new_positions[i][1], new_positions[i][0]-2, '*')
 
-
 	global positions
 	positions = new_positions
 
 
 def main():
-	# parser = argparse.ArgumentParser(description='Starts the client. ')
-	# parser.add_argument('ip_adress', nargs=1, default='192.168.10.4')
-	# parser.add_argument('port', type=int, nargs=1, default=9999)
-	# args = parser.parse_args()
+	parser = argparse.ArgumentParser(description='Starts the client. ')
+	parser.add_argument('ip_adress', nargs=1, default='192.168.10.4')
+	parser.add_argument('port', type=int, nargs=1, default=9999)
+	args = parser.parse_args()
 
 	player_num = -1
 	window = None
 	key_list = [curses.KEY_UP, curses.KEY_DOWN, curses.KEY_LEFT, curses.KEY_RIGHT]
 
-	s = create_socket()
+	s = create_socket(args.ip_adress[0], args.port[0])
 
 	data = s.recv(1024)
 	data = data.decode('utf-8')
