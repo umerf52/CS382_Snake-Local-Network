@@ -6,6 +6,8 @@ import random
 
 # Global variables
 positions = []
+#snake = [[0,0], [0,0], [0,0]]
+
 
 def create_board(s, player_num):
 	data = s.recv(1024)
@@ -23,8 +25,12 @@ def create_board(s, player_num):
 	for i in range(len(positions)):
 		if i == player_num:
 			window.addch(positions[i][1], positions[i][0], curses.ACS_CKBOARD)
+			window.addch(positions[i][1], positions[i][0]-1, curses.ACS_CKBOARD)
+			window.addch(positions[i][1], positions[i][0]-2, curses.ACS_CKBOARD)
 		else:
 			window.addch(positions[i][1], positions[i][0], '*')
+			#window.addch(positions[i][1], positions[i][0]-1, '*')
+			#window.addch(positions[i][1], positions[i][0]-2, '*')
 		next_key = window.getch()
 	return window, positions
 
@@ -43,9 +49,13 @@ def update_board(new_positions, player_num, window):
 	for i in range(len(new_positions)):
 		if i == player_num:
 			window.addch(new_positions[i][1], new_positions[i][0], curses.ACS_CKBOARD)
+			window.addch(new_positions[i][1], new_positions[i][0]-1, curses.ACS_CKBOARD)
+			window.addch(new_positions[i][1], new_positions[i][0]-2, curses.ACS_CKBOARD)
 		else:
 			if (new_positions[i][1] != -1) and (new_positions[i][0] != -1):
 				window.addch(new_positions[i][1], new_positions[i][0], '*')
+				#window.addch(new_positions[i][1], new_positions[i][0]-1, '*')
+				#window.addch(new_positions[i][1], new_positions[i][0]-2, '*')
 
 
 	global positions
@@ -75,16 +85,6 @@ def main():
 		global positions
 		window, positions = create_board(s, player_num)
 
-
-	key = window.getch()
-
-	#s.setblocking(0)
-
-	key_list = [curses.KEY_UP, curses.KEY_DOWN, curses.KEY_LEFT, curses.KEY_RIGHT]
-	key = random.choice(key_list)
-	window.nodelay(1)
-
-
 	key = random.choice(key_list)
 
 	while True:
@@ -97,6 +97,11 @@ def main():
 			s.send(str(key).encode('utf-8'))
 			data = s.recv(1024)
 			response = pickle.loads(data)
+			if response == 'You Won':
+				print(response, '\nGAME OVER.')
+				curses.endwin()
+				break
+
 			if response == 'Collision detected.':
 				print(response, '\nGAME OVER.')
 				curses.endwin()

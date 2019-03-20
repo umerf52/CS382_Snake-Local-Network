@@ -9,6 +9,7 @@ import time
 # Global variables
 positions = []
 
+
 def on_new_client(clientsocket, addr,player_num):
 	print ('Got connection from', addr)
 	player_num = str(player_num)
@@ -64,10 +65,22 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 			positions[player_num] = (-1, -1)
 			current_players -= 1
 			s.close()
+			del positions[player_num]
+			#print ('positions: ', len(positions))
 			flag = True
 			break
 
 		for i in range(len(positions)):
+			'''
+			if len(positions) <= 1:
+				msg = 'You Won'
+				s.send(pickle.dumps(msg))
+				current_players -= 1
+				s.close()
+				flag = True
+				break 
+				'''
+
 			if i == player_num:
 				continue
 			else:
@@ -76,6 +89,7 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 					s.send(pickle.dumps(msg))
 					players[i].send(pickle.dumps(msg))
 					current_players -= 2
+					time.sleep(0.001)
 					s.close()
 					players[i].close()
 					flag = True
