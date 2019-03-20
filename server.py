@@ -64,7 +64,7 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 			positions[player_num] = (-1, -1)
 			current_players -= 1
 			s.close()
-			del positions[player_num]
+			#del positions[player_num]
 			#print ('positions: ', len(positions))
 			flag = True
 			break
@@ -78,7 +78,7 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 				s.close()
 				flag = True
 				break 
-				'''
+			'''
 
 			if i == player_num:
 				continue
@@ -133,6 +133,7 @@ def main():
 		data = p.recv(1024)
 		msg = data.decode('utf-8')
 		if msg == 'started making board':
+			print('started making board')
 			continue
 		else:
 			print('Error issuing create_board')
@@ -149,8 +150,8 @@ def main():
 
 
 	for p in players:
-		temp_x = random.randint(0, max_x-1)
-		temp_y = random.randint(0, max_y-1)
+		temp_x = random.randint(5, max_x-5)
+		temp_y = random.randint(5, max_y-5)
 		temp_tuple = (temp_x, temp_y)
 		positions.append(temp_tuple)
 

@@ -6,8 +6,8 @@ import random
 
 # Global variables
 positions = []
-#snake = [[0,0], [0,0], [0,0]]
-
+snake = []
+snakelength = 3
 
 def create_board(s, player_num):
 	data = s.recv(1024)
@@ -22,13 +22,50 @@ def create_board(s, player_num):
 	data = s.recv(1024)
 	global positions
 	positions = pickle.loads(data)
+	numsnakes = len(positions)
+	global snake
+	snake = [None] * numsnakes
 	for i in range(len(positions)):
+		
 		if i == player_num:
-			window.addch(positions[i][1], positions[i][0], curses.ACS_CKBOARD)
-			window.addch(positions[i][1], positions[i][0]-1, curses.ACS_CKBOARD)
-			window.addch(positions[i][1], positions[i][0]-2, curses.ACS_CKBOARD)
+			temp = []
+			for g in range(0, snakelength, +1):
+				temp.append([positions[i][1], positions[i][0] - g])
+			#global snake
+			snake[i] = temp
+			print (snake[i])
+			print (snake[i][i][1])
+			print (snake[i][i][0])
+			window.timeout(3)
+
+			window.addstr(int(temp[0][1]), int(temp[0][0]), '=')
+			window.addstr(int(temp[1][1]), int(temp[1][0]), '=')
+			window.addstr(int(temp[2][1]), int(temp[2][0]), '=')
+			window.timeout(3)
+
+			#for j in range(2, 0, -1):
+				#global snake
+			#	window.addch((snake[i][j][1]), (snake[i][j][0]), '=')
+			#window.addch(positions[i][1], positions[i][0], curses.ACS_CKBOARD)
+			#window.addch(positions[i][1], positions[i][0]-1, curses.ACS_CKBOARD)
+			#window.addch(positions[i][1], positions[i][0]-2, curses.ACS_CKBOARD)
 		else:
-			window.addch(positions[i][1], positions[i][0], '*')
+			temp = []
+			for g in range(0, snakelength, +1):
+				temp.append([positions[i][1], positions[i][0] - g])
+			#global snake
+			snake[i] = temp
+			window.timeout(3)
+
+			window.addch(snake[i][0][1], snake[i][0][0], '*')
+			window.addch(snake[i][1][1], snake[i][1][0], '*')
+			window.addch(snake[i][2][1], snake[i][2][0], '*')
+			window.timeout(3)
+
+			#for j in range(2, 0, -1):
+				#global snake
+			#	window.addstr((snake[i][j][1]), (snake[i][j][0]), '*')
+			#window.addch(positions[i][1], positions[i][0], '*')
 			#window.addch(positions[i][1], positions[i][0]-1, '*')
 			#window.addch(positions[i][1], positions[i][0]-2, '*')
 		next_key = window.getch()
@@ -43,14 +80,24 @@ def create_socket(ip_adress, port):
 
 def update_board(new_positions, player_num, window):
 	window.clear()
+	global snake
 	for i in range(len(new_positions)):
 		if i == player_num:
-			window.addch(new_positions[i][1], new_positions[i][0], curses.ACS_CKBOARD)
-			window.addch(new_positions[i][1], new_positions[i][0]-1, curses.ACS_CKBOARD)
-			window.addch(new_positions[i][1], new_positions[i][0]-2, curses.ACS_CKBOARD)
+			del snake[i][2]		#delete tail of snake
+			snake.insert(0, new_positions)
+			for j in range(2, 0, -1):
+				window.addstr((snake[i][j][1]), (snake[i][j][0]), "=")
+
+			#window.addch(new_positions[i][1], new_positions[i][0], curses.ACS_CKBOARD)
+			#window.addch(new_positions[i][1], new_positions[i][0]-1, curses.ACS_CKBOARD)
+			#window.addch(new_positions[i][1], new_positions[i][0]-2, curses.ACS_CKBOARD)
 		else:
 			if (new_positions[i][1] != -1) and (new_positions[i][0] != -1):
-				window.addch(new_positions[i][1], new_positions[i][0], '*')
+				del snake[i][2]
+				snake.insert(0, new_positions)
+				for j in range(2, 0, -1):
+					window.addstr((snake[i][j][1]), (snake[i][j][0]), "*")
+				#window.addch(new_positions[i][1], new_positions[i][0], '*')
 				#window.addch(new_positions[i][1], new_positions[i][0]-1, '*')
 				#window.addch(new_positions[i][1], new_positions[i][0]-2, '*')
 
