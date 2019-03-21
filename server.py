@@ -33,9 +33,8 @@ def joining_players(current_players, max_players, mainsocket):
 		thread.start()
 		players_threads.append(c)
 		current_players = current_players + 1
-	print ("\nAll players connected\nStarting game in 3 seconds.\n")
-	time.sleep(3)
-
+	print ("\nAll players connected\nStarting game in 1 second.\n")
+	time.sleep(1)
 	return current_players, players_threads
 
 
@@ -91,17 +90,19 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 
 
 def main():
-	parser = argparse.ArgumentParser(description='Starts the server. ')
-	parser.add_argument('ip_adress', nargs=1, default='192.168.10.4')
-	parser.add_argument('port', type=int, nargs=1, default=9999)
-	parser.add_argument('players', type=int, nargs=1, default=2)
-	args = parser.parse_args()
+	# parser = argparse.ArgumentParser(description='Starts the server. ')
+	# parser.add_argument('ip_adress', nargs=1, default='192.168.10.4')
+	# parser.add_argument('port', type=int, nargs=1, default=9999)
+	# parser.add_argument('players', type=int, nargs=1, default=2)
+	# args = parser.parse_args()
 
-	max_players = args.players[0]
+	max_players = 2
+	# max_players = args.players[0]
 	current_players = 0
 	players = []
 
-	s = create_socket(args.ip_adress[0], args.port[0])
+	s = create_socket(socket.gethostbyname(socket.gethostname()), 9999)
+	# s = create_socket(args.ip_adress[0], args.port[0])
 	print('Waiting for clients... \n')
 
 	stdscr = curses.initscr()
@@ -135,8 +136,8 @@ def main():
 
 
 	for p in players:
-		temp_x = random.randint(0, max_x-1)
-		temp_y = random.randint(0, max_y-1)
+		temp_x = random.randint(10, max_x-10)
+		temp_y = random.randint(10, max_y-10)
 		temp_tuple = (temp_x, temp_y)
 		positions.append(temp_tuple)
 
