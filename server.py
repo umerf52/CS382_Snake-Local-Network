@@ -42,9 +42,20 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 	flag = False
 	while True:
 		data = s.recv(1024)
+		global positions
+		check = str(data.decode('utf-8'))
+		if check == 'Head to body collision detected':
+			msg = 'Head Collision detected'
+			s.send(pickle.dumps(msg))
+			positions[player_num] = (-1, -1)
+			current_players -= 1
+			s.close()
+			flag = True
+			break
+
+
 		key = int(data.decode('utf-8'))
 
-		global positions
 		temp_x = positions[player_num][0]
 		temp_y = positions[player_num][1]
 
@@ -67,10 +78,11 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 
 		for i in range(len(positions)):
 			if i == player_num:
+				#s.setblocking(0)
 				continue
 			else:
 				if (temp_x == positions[i][0]) and (temp_y == positions[i][1]):
-					msg = 'Collision detected.'
+					msg = 'Head to Head collision detected.'
 					s.send(pickle.dumps(msg))
 					players[i].send(pickle.dumps(msg))
 					current_players -= 2
@@ -79,6 +91,7 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 					flag = True
 					break
 
+				
 		if flag == True:
 			break
 		positions[player_num] = (temp_x, temp_y)
