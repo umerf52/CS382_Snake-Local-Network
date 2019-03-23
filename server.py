@@ -8,6 +8,8 @@ import time
 
 # Global variables
 positions = []
+SNAKE_LENGTH = 5
+snakes_body = []
 
 def on_new_client(clientsocket, addr,player_num):
 	print ('Got connection from', addr)
@@ -40,12 +42,18 @@ def joining_players(current_players, max_players, mainsocket):
 
 def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 	flag = False
+	
+	#temp = 1
 	while True:
-		data = s.recv(1024)
+		try:
+			data = s.recv(1024)
+		except socket.error:
+			break
 		global positions
+		
 		check = str(data.decode('utf-8'))
 		if check == 'Head to body collision detected':
-			msg = 'Head Collision detected'
+			msg = 'Head to body collision detected'
 			s.send(pickle.dumps(msg))
 			positions[player_num] = (-1, -1)
 			current_players -= 1
@@ -76,28 +84,37 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 			flag = True
 			break
 
+		new_head = (temp_x, temp_y)
+		
+		snakes_body[player_num].pop()
+		snakes_body[player_num].insert(0, new_head)
+
 		for i in range(len(positions)):
 			if i == player_num:
-				#s.setblocking(0)
 				continue
 			else:
+				
 				if (temp_x == positions[i][0]) and (temp_y == positions[i][1]):
 					msg = 'Head to Head collision detected.'
-					s.send(pickle.dumps(msg))
-					players[i].send(pickle.dumps(msg))
-					current_players -= 2
-					s.close()
-					players[i].close()
-					flag = True
-					break
-
-				
+					try:
+						s.send(pickle.dumps(msg))
+						s.close()
+						players[i].send(pickle.dumps(msg))
+						players[i].close()
+					except socket.error:	
+						current_players -= 2
+						flag = True
+						break
 		if flag == True:
 			break
-		positions[player_num] = (temp_x, temp_y)
-
-		data_string = pickle.dumps(positions)
-		s.send(data_string)
+		
+		try:
+			positions[player_num] = new_head
+			data_string = pickle.dumps(positions)
+			s.send(data_string)
+		except socket.error:
+			pass
+			#temp += 1
 
 	return
 
@@ -158,6 +175,13 @@ def main():
 	for p in players:
 		data_string = pickle.dumps(positions)
 		p.send(data_string)
+
+	for i in range(len(positions)):
+		temp_snake = []
+		for j in range(0, -1*SNAKE_LENGTH, -1):
+			temp_snake.append((positions[i][1], positions[i][0]-j))
+		global snakes
+		snakes_body.append(temp_snake)
 
 
 	listener_threads = []

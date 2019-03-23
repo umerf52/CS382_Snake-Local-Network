@@ -30,8 +30,6 @@ def create_board(s, player_num):
 			temp_snake.append((positions[i][1], positions[i][0]-j))
 		global snakes
 		snakes.append(temp_snake)
-		#print (snakes)
-		#time.sleep(3)
 		if i == player_num:
 			for j in range(0, SNAKE_LENGTH):
 				window.addch(snakes[i-1][j][0], snakes[i-1][j][1], curses.ACS_CKBOARD)
@@ -50,34 +48,43 @@ def create_socket(ip_adress, port):
 def update_board(new_positions, player_num, window):
 	window.clear()
 	window.border(0)
+	global positions
 	for i in range(len(new_positions)):
 		global snakes
+
 		snakes[i-1].pop()
-		new_head = (new_positions[i][1], new_positions[i][0])
-		snakes[i-1].insert(0, new_head)
-		if i == player_num:
-			for j in range(0, SNAKE_LENGTH):
-				window.addch(snakes[i-1][j][0], snakes[i-1][j][1], curses.ACS_BLOCK)
+		if new_positions == 'Head to body collision detected':
+			return new_positions
+		try:
+			positions = new_positions
+			new_head = (new_positions[i][1], new_positions[i][0])
+			snakes[i-1].insert(0, new_head)
 
-			for j in range(len(new_positions)):
-				if j-1 != (i-1):
-					for k in range(0,SNAKE_LENGTH):
-						if ((snakes[i-1][0][0] == snakes[j-1][k][0]) and (snakes[i-1][0][1] == snakes[j-1][k][1])):
-							msg = 'Head to body collision detected'
-							#print(snakes)
-							#print (snakes[i-1])
-							#print (snakes[j])
-							#time.sleep(5)
-							#socket.send(str(msg).encode('utf-8'))
-							return msg
-
-		else:
-			if (new_positions[i][1] != -1) and (new_positions[i][0] != -1):
+			if i == player_num:
 				for j in range(0, SNAKE_LENGTH):
-					window.addch(snakes[i-1][j][0], snakes[i-1][j][1], curses.ACS_CKBOARD)
+					window.addch(snakes[i-1][j][0], snakes[i-1][j][1], curses.ACS_BLOCK)
+				
+				#time.sleep(0.1)
+				for j in range(len(new_positions)):
+					if j-1 != i-1:
+						for k in range(0,SNAKE_LENGTH):
+							if ((snakes[i-1][0][0] == snakes[j-1][k][0]) and (snakes[i-1][0][1] == snakes[j-1][k][1])):
+								msg = 'Head to body collision detected'
+								#print (positions)
+								#print (new_positions)
+								#print ("msg ", msg)
+								return msg		
+			else:
+				if (new_positions[i][1] != -1) and (new_positions[i][0] != -1):
+					for j in range(0, SNAKE_LENGTH):
+						window.addch(snakes[i-1][j][0], snakes[i-1][j][1], curses.ACS_CKBOARD)
+		
+		except ValueError:
+			return 'Head to body collision detected'
 
-	global positions
-	positions = new_positions
+
+	#global positions
+	
 	return None
 
 
@@ -132,38 +139,37 @@ def main():
 			key = key
 		else:
 			key = next_key
-		if key in key_list:
-			if temp != None:
-				s.send(str(temp).encode('utf-8'))
+		try:
+			if key in key_list:
+				if temp != None:
+					s.send(str(temp).encode('utf-8'))
+				else:
+					s.send(str(key).encode('utf-8'))
+				data = s.recv(1024)
+				response = pickle.loads(data)
+				if response == 'Head to Head collision detected.':
+					print(response, '\nGAME OVER.')
+					curses.endwin()
+					break
+
+				if response == 'Head to body collision detected':
+					print(response, '\nGAME OVER.')
+					curses.endwin()
+					break
+
+				if response == 'Out of bounds. ':
+					print(response, '\nGAME OVER.')
+					curses.endwin()
+					break
+
+				time.sleep(0.005)
+				temp = update_board(response, player_num, window)
 			else:
-				s.send(str(key).encode('utf-8'))
-			data = s.recv(1024)
-			response = pickle.loads(data)
-			if response == 'Head to head collision detected.':
-				print(response, '\nGAME OVER.')
-				curses.endwin()
-				break
+				temp = update_board(positions, player_num, window)
+		except socket.error:
+			#if e.errno == errno.WSAECONNRESET:
+			print ('GAME OVER.')
 
-			if response == 'Head to body Collision detected':
-				print(response, '\nGAME OVER.')
-				curses.endwin()
-				break
-
-			if response == 'Out of bounds. ':
-				print(response, '\nGAME OVER.')
-				curses.endwin()
-				break
-
-			temp = update_board(response, player_num, window)
-
-			#if temp == 'Head to body collision detected':
-			#	msg = 'Head to body collision detected'
-			#	s.send(str(msg).encode('utf-8'))
-		else:
-			temp = update_board(positions, player_num, window)
-			#if temp == 'Head to body collision detected':
-			#	msg = 'Head to body collision detected'
-			#	s.send(str(msg).encode('utf-8'))
 
 	s.close()
 
