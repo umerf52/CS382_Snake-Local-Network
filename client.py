@@ -1,3 +1,7 @@
+# References:
+# https://github.com/KyrosDigital/SnakeGame
+# https://github.com/engineer-man/youtube/tree/master/015
+
 import socket
 import argparse
 import curses
@@ -32,10 +36,12 @@ def create_board(s, player_num):
 		snakes.append(temp_snake)
 		if i == player_num:
 			for j in range(0, SNAKE_LENGTH):
-				window.addch(snakes[i-1][j][0], snakes[i-1][j][1], curses.ACS_CKBOARD)
+				window.addch(snakes[i][j][0], snakes[i][j][1], curses.ACS_BLOCK)
+		
 		else:
 			for j in range(0, SNAKE_LENGTH):
-				window.addch(snakes[i-1][j][0], snakes[i-1][j][1], curses.ACS_BLOCK)
+				window.addch(snakes[i][j][0], snakes[i][j][1], curses.ACS_CKBOARD)
+				
 	return window, positions, sh, sw
 
 
@@ -48,51 +54,40 @@ def create_socket(ip_adress, port):
 def update_board(new_positions, player_num, window):
 	window.clear()
 	window.border(0)
-	global positions
-	for i in range(len(new_positions)):
-		global snakes
-
-		snakes[i-1].pop()
-		if new_positions == 'Head to body collision detected':
-			return new_positions
-		try:
-			positions = new_positions
-			new_head = (new_positions[i][1], new_positions[i][0])
-			snakes[i-1].insert(0, new_head)
-
-			if i == player_num:
-				for j in range(0, SNAKE_LENGTH):
-					window.addch(snakes[i-1][j][0], snakes[i-1][j][1], curses.ACS_BLOCK)
-				
-				#time.sleep(0.1)
-				for j in range(len(new_positions)):
-					if j-1 != i-1:
-						for k in range(0,SNAKE_LENGTH):
-							if ((snakes[i-1][0][0] == snakes[j-1][k][0]) and (snakes[i-1][0][1] == snakes[j-1][k][1])):
-								msg = 'Head to body collision detected'
-								#print (positions)
-								#print (new_positions)
-								#print ("msg ", msg)
-								return msg		
-			else:
-				if (new_positions[i][1] != -1) and (new_positions[i][0] != -1):
-					for j in range(0, SNAKE_LENGTH):
-						window.addch(snakes[i-1][j][0], snakes[i-1][j][1], curses.ACS_CKBOARD)
-		
-		except ValueError:
-			return 'Head to body collision detected'
-
-
-	#global positions
+	global snakes
 	
+	for i in range(len(new_positions)):
+		snakes[i].pop()
+		new_head = (new_positions[i][1], new_positions[i][0])
+		snakes[i].insert(0, new_head)
+		
+		if i == player_num:
+			for j in range(0, SNAKE_LENGTH):
+				window.addch(snakes[i][j][0], snakes[i][j][1], curses.ACS_BLOCK)
+		else:
+			if (new_positions[i][1] != -1) and (new_positions[i][0] != -1):
+				for j in range(0, SNAKE_LENGTH):
+					window.addch(snakes[i][j][0], snakes[i][j][1], curses.ACS_CKBOARD)
+
+	head_x = snakes[player_num][0][1]
+	head_y = snakes[player_num][0][0]
+	global positions
+	for i in range(len(positions)):
+		if i != player_num:
+			for j in range(SNAKE_LENGTH):
+					if snakes[i][j][0] == head_y and snakes[i][j][1] == head_x:
+						msg = 'Head to body collision detected'
+						return msg
+
+	positions = new_positions
 	return None
 
 
 def main():
-	# parser = argparse.ArgumentParser(description='Starts the client. ')
-	# parser.add_argument('ip_adress', nargs=1, default='192.168.10.4')
-	# parser.add_argument('port', type=int, nargs=1, default=9999)
-	# args = parser.parse_args()
+	parser = argparse.ArgumentParser(description='Starts the client. ')
+	parser.add_argument('ip_adress', nargs=1, default='192.168.10.4')
+	parser.add_argument('port', type=int, nargs=1, default=9999)
+	args = parser.parse_args()
 
 	player_num = -1
 	window = None
@@ -101,8 +96,8 @@ def main():
 	key_list = [curses.KEY_UP, curses.KEY_DOWN, curses.KEY_LEFT, curses.KEY_RIGHT]
 	key = -1
 
-	# s = create_socket(args.ip_adress[0], args.port[0])
-	s = create_socket(socket.gethostbyname(socket.gethostname()), 9999)
+	s = create_socket(args.ip_adress[0], args.port[0])
+	# s = create_socket(socket.gethostbyname(socket.gethostname()), 9999)
 
 	data = s.recv(1024)
 	data = data.decode('utf-8')
@@ -124,20 +119,15 @@ def main():
 		key = random.choice([key_list[1], key_list[2]])
 	elif (y_ratio >= 0.5) and (x_ratio < 0.5):
 		key = random.choice([key_list[0], key_list[3]])
-	elif (y_ratio >= 0.5) and (x_ratio >= 0.5):
-		key = random.choice([key_list[0], key_list[2]])
 	else:
-		key = random.choice(key_list)
-		print('Random key. This should not have happened.')
+		key = random.choice([key_list[0], key_list[2]])
 
-	
 	temp = None
 	while True:
 		next_key = window.getch()
-		
-		if next_key == -1:
-			key = key
-		else:
+		time.sleep(0.005)
+
+		if next_key != -1:
 			key = next_key
 		try:
 			if key in key_list:
@@ -147,7 +137,15 @@ def main():
 					s.send(str(key).encode('utf-8'))
 				data = s.recv(1024)
 				response = pickle.loads(data)
+
+				if response == 'You won!':
+					print(response)
+					window.clear()
+					curses.endwin()
+					break
+
 				if response == 'Head to Head collision detected.':
+					window.clear()
 					print(response, '\nGAME OVER.')
 					curses.endwin()
 					break
@@ -162,14 +160,9 @@ def main():
 					curses.endwin()
 					break
 
-				time.sleep(0.005)
 				temp = update_board(response, player_num, window)
-			else:
-				temp = update_board(positions, player_num, window)
 		except socket.error:
-			#if e.errno == errno.WSAECONNRESET:
 			print ('GAME OVER.')
-
 
 	s.close()
 

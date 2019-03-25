@@ -1,3 +1,7 @@
+# References:
+# https://github.com/KyrosDigital/SnakeGame
+# https://github.com/engineer-man/youtube/tree/master/015
+
 import socket
 import threading
 import argparse
@@ -10,6 +14,7 @@ import time
 positions = []
 SNAKE_LENGTH = 5
 snakes_body = []
+current_players = 0
 
 def on_new_client(clientsocket, addr,player_num):
 	print ('Got connection from', addr)
@@ -25,9 +30,9 @@ def create_socket(ip_adress, port):
 	return s
 
 
-def joining_players(current_players, max_players, mainsocket):
+def joining_players(max_players, mainsocket):
 	players_threads = []
-
+	global current_players
 	while(current_players < max_players):
 		c, addr = mainsocket.accept()     								# Establish connection with client.
 		thread = threading.Thread(target=on_new_client, args=(c,addr,current_players))
@@ -37,13 +42,13 @@ def joining_players(current_players, max_players, mainsocket):
 		current_players = current_players + 1
 	print ("\nAll players connected\nStarting game in 1 second.\n")
 	time.sleep(1)
-	return current_players, players_threads
+	return players_threads
 
 
-def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
+def listen_client_moves(player_num, s, players, max_x, max_y):
 	flag = False
+	global current_players
 	
-	#temp = 1
 	while True:
 		try:
 			data = s.recv(1024)
@@ -60,7 +65,6 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 			s.close()
 			flag = True
 			break
-
 
 		key = int(data.decode('utf-8'))
 
@@ -85,7 +89,6 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 			break
 
 		new_head = (temp_x, temp_y)
-		
 		snakes_body[player_num].pop()
 		snakes_body[player_num].insert(0, new_head)
 
@@ -98,15 +101,23 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 					msg = 'Head to Head collision detected.'
 					try:
 						s.send(pickle.dumps(msg))
-						s.close()
 						players[i].send(pickle.dumps(msg))
-						players[i].close()
+						s.close()
+						current_players -= 1
 					except socket.error:	
-						current_players -= 2
+						print ('error on head to head')
 						flag = True
 						break
 		if flag == True:
 			break
+
+		if current_players <= 1:
+			for p in players:
+				try:
+					s.send(pickle.dumps('You won!'))
+					return
+				except:
+					pass
 		
 		try:
 			positions[player_num] = new_head
@@ -114,25 +125,22 @@ def listen_client_moves(player_num, s, players, max_x, max_y, current_players):
 			s.send(data_string)
 		except socket.error:
 			pass
-			#temp += 1
-
 	return
 
 
 def main():
-	# parser = argparse.ArgumentParser(description='Starts the server. ')
-	# parser.add_argument('ip_adress', nargs=1, default='192.168.10.4')
-	# parser.add_argument('port', type=int, nargs=1, default=9999)
-	# parser.add_argument('players', type=int, nargs=1, default=2)
-	# args = parser.parse_args()
+	parser = argparse.ArgumentParser(description='Starts the server. ')
+	parser.add_argument('ip_adress', nargs=1, default='192.168.10.4')
+	parser.add_argument('port', type=int, nargs=1, default=9999)
+	parser.add_argument('players', type=int, nargs=1, default=2)
+	args = parser.parse_args()
 
 	max_players = 2
-	# max_players = args.players[0]
-	current_players = 0
+	max_players = args.players[0]
 	players = []
 
-	s = create_socket(socket.gethostbyname(socket.gethostname()), 9999)
-	# s = create_socket(args.ip_adress[0], args.port[0])
+	# s = create_socket(socket.gethostbyname(socket.gethostname()), 9999)
+	s = create_socket(args.ip_adress[0], args.port[0])
 	print('Waiting for clients... \n')
 
 	stdscr = curses.initscr()
@@ -142,7 +150,7 @@ def main():
 	max_x = max_x-2
 	window_size = (max_y, max_x)
 	
-	current_players, players = joining_players(current_players, max_players, s)
+	players = joining_players(max_players, s)
 
 	for p in players:
 		msg = 'create_board'
@@ -186,7 +194,7 @@ def main():
 
 	listener_threads = []
 	for i in range(len(players)):
-		thread = threading.Thread(target=listen_client_moves, args=(i, players[i], players, max_x, max_y, current_players))
+		thread = threading.Thread(target=listen_client_moves, args=(i, players[i], players, max_x, max_y))
 		thread.daemon = True
 		thread.start()
 		listener_threads.append(thread)
