@@ -15,6 +15,7 @@ positions = []
 SNAKE_LENGTH = 5
 snakes_body = []
 current_players = 0
+BUFFER_SIZE = 1024
 
 def on_new_client(clientsocket, addr,player_num):
 	print ('Got connection from', addr)
@@ -51,7 +52,7 @@ def listen_client_moves(player_num, s, players, max_x, max_y):
 	
 	while True:
 		try:
-			data = s.recv(1024)
+			data = s.recv(BUFFER_SIZE)
 		except socket.error:
 			break
 		global positions
@@ -105,7 +106,7 @@ def listen_client_moves(player_num, s, players, max_x, max_y):
 						s.close()
 						current_players -= 1
 					except socket.error:	
-						print ('error on head to head')
+						print ('Error on head to head collision')
 						flag = True
 						break
 		if flag == True:
@@ -114,7 +115,7 @@ def listen_client_moves(player_num, s, players, max_x, max_y):
 		if current_players <= 1:
 			for p in players:
 				try:
-					s.send(pickle.dumps('You won!'))
+					p.send(pickle.dumps('You won!'))
 					return
 				except:
 					pass
@@ -135,11 +136,9 @@ def main():
 	parser.add_argument('players', type=int, nargs=1, default=2)
 	args = parser.parse_args()
 
-	max_players = 2
 	max_players = args.players[0]
 	players = []
 
-	# s = create_socket(socket.gethostbyname(socket.gethostname()), 9999)
 	s = create_socket(args.ip_adress[0], args.port[0])
 	print('Waiting for clients... \n')
 
@@ -153,11 +152,11 @@ def main():
 	players = joining_players(max_players, s)
 
 	for p in players:
-		msg = 'create_board'
+		msg = 'CREATE_BOARD'
 		p.send(msg.encode('utf-8'))
-		data = p.recv(1024)
+		data = p.recv(BUFFER_SIZE)
 		msg = data.decode('utf-8')
-		if msg == 'started making board':
+		if msg == 'STARTED_MAKING_BOARD':
 			continue
 		else:
 			print('Error issuing create_board')
@@ -165,9 +164,9 @@ def main():
 
 	for p in players:			# send window size to be created for board 
 		p.send(pickle.dumps(window_size))
-		data = p.recv(1024)
+		data = p.recv(BUFFER_SIZE)
 		msg = data.decode('utf-8')
-		if msg == 'size received':
+		if msg == 'SIZE_RECEIVED':
 			continue
 		else:
 			print('Error sending size')
@@ -188,7 +187,6 @@ def main():
 		temp_snake = []
 		for j in range(0, -1*SNAKE_LENGTH, -1):
 			temp_snake.append((positions[i][1], positions[i][0]-j))
-		global snakes
 		snakes_body.append(temp_snake)
 
 
@@ -215,3 +213,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    

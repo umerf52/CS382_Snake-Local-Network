@@ -13,19 +13,20 @@ import time
 positions = []
 snakes = []
 SNAKE_LENGTH = 5
+BUFFER_SIZE = 1024
 
 def create_board(s, player_num):
-	data = s.recv(1024)
+	data = s.recv(BUFFER_SIZE)
 	winsize = pickle.loads(data)
-	s.send('size received'.encode('utf-8'))
+	s.send('SIZE_RECEIVED'.encode('utf-8'))
 	sh, sw = winsize[0], winsize[1]
-	stdscr = curses.initscr()
+	curses.initscr()
 	curses.curs_set(0)
 	window = curses.newwin(sh, sw, 0, 0)
 	window.keypad(1)
 	window.timeout(1)
 	window.border(0)
-	data = s.recv(1024)
+	data = s.recv(BUFFER_SIZE)
 	global positions
 	positions = pickle.loads(data)
 	for i in range(len(positions)):
@@ -48,7 +49,7 @@ def create_board(s, player_num):
 def create_socket(ip_adress, port):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((ip_adress, port))
-	print('Connected to ', ip_adress, port, '\nWaiting for other players.\n')
+	print('Connected to ', ip_adress, port, '\nWaiting for other players...\n')
 	return s
 
 def update_board(new_positions, player_num, window):
@@ -97,16 +98,15 @@ def main():
 	key = -1
 
 	s = create_socket(args.ip_adress[0], args.port[0])
-	# s = create_socket(socket.gethostbyname(socket.gethostname()), 9999)
 
-	data = s.recv(1024)
+	data = s.recv(BUFFER_SIZE)
 	data = data.decode('utf-8')
 	player_num = int(data)
 
-	data = s.recv(1024)
+	data = s.recv(BUFFER_SIZE)
 	data = data.decode('utf-8')
-	if data == 'create_board':
-		s.send('started making board'.encode('utf-8'))
+	if data == 'CREATE_BOARD':
+		s.send('STARTED_MAKING_BOARD'.encode('utf-8'))
 		global positions
 		window, positions, max_y, max_x = create_board(s, player_num)
 
@@ -135,7 +135,7 @@ def main():
 					s.send(str(temp).encode('utf-8'))
 				else:
 					s.send(str(key).encode('utf-8'))
-				data = s.recv(1024)
+				data = s.recv(BUFFER_SIZE)
 				response = pickle.loads(data)
 
 				if response == 'You won!':
@@ -162,7 +162,7 @@ def main():
 
 				temp = update_board(response, player_num, window)
 		except socket.error:
-			print ('GAME OVER.')
+			print ('Error. GAME OVER')
 
 	s.close()
 
